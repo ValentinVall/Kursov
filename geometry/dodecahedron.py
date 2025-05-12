@@ -1,37 +1,75 @@
-# geometry/dodecahedron.py
-
 import bpy
-from .base_shape import PlatonShape
+import bmesh
+from math import sqrt
+from geometry.base_shape import PlatonShape
+
 
 class Dodecahedron(PlatonShape):
-    def __init__(self, name="Dodecahedron", location=(0, 0, 0)):
-        super().__init__(name, location)
-        self.build()
+    def __init__(self, name="Dodecahedron"):
+        super().__init__(name)
+        self.create_mesh()
 
     def create_mesh(self):
-        # Вершини додекаедра
-        vertices = [
-            (1, 1, 1), (1, -1, 1), (-1, -1, 1), (-1, 1, 1), (1, 1, -1), (1, -1, -1),
-            (-1, -1, -1), (-1, 1, -1), (0, 1.618, 0.618), (0, -1.618, 0.618),
-            (0, -1.618, -0.618), (0, 1.618, -0.618), (0.618, 0, 1.618), (-0.618, 0, 1.618),
-            (-0.618, 0, -1.618), (0.618, 0, -1.618), (1.618, 0.618, 0), (-1.618, 0.618, 0),
-            (-1.618, -0.618, 0), (1.618, -0.618, 0)
+        phi = (1 + sqrt(5)) / 2  # Золоте співвідношення
+
+        a, b = 1, 1 / phi
+
+        verts = [
+            (-a, -a, -a),
+            (-a, -a, a),
+            (-a, a, -a),
+            (-a, a, a),
+            (a, -a, -a),
+            (a, -a, a),
+            (a, a, -a),
+            (a, a, a),
+            (0, -b, -phi),
+            (0, -b, phi),
+            (0, b, -phi),
+            (0, b, phi),
+            (-b, -phi, 0),
+            (-b, phi, 0),
+            (b, -phi, 0),
+            (b, phi, 0),
+            (-phi, 0, -b),
+            (phi, 0, -b),
+            (-phi, 0, b),
+            (phi, 0, b)
         ]
 
-        # Грані додекаедра (п'ятикутники)
         faces = [
-            (8, 11, 4, 16, 0), (8, 11, 7, 17, 3), (9, 10, 5, 19, 1), (9, 10, 6, 18, 2),
-            (12, 13, 3, 8, 0), (12, 13, 2, 9, 1), (15, 14, 7, 11, 4), (15, 14, 6, 10, 5),
-            (16, 19, 1, 12, 0), (16, 19, 5, 15, 4), (17, 18, 2, 13, 3), (17, 18, 6, 14, 7)
+            (0, 8, 10, 2, 16),
+            (0, 16, 18, 1, 12),
+            (0, 12, 14, 4, 8),
+            (8, 4, 17, 6, 10),
+            (10, 6, 13, 3, 2),
+            (2, 3, 19, 18, 16),
+            (1, 18, 19, 7, 11),
+            (1, 11, 9, 14, 12),
+            (4, 14, 9, 5, 17),
+            (6, 17, 5, 15, 13),
+            (3, 13, 15, 7, 19),
+            (7, 15, 5, 9, 11)
         ]
 
-        # Створення мешу
         mesh = bpy.data.meshes.new(f"{self.name}_Mesh")
-        mesh.from_pydata(vertices, [], faces)
-        mesh.update()
-
-        # Додавання об'єкта на сцену
         obj = bpy.data.objects.new(self.name, mesh)
         bpy.context.collection.objects.link(obj)
+
+        bm = bmesh.new()
+
+        for v in verts:
+            bm.verts.new(v)
+        bm.verts.ensure_lookup_table()
+
+        for f in faces:
+            try:
+                bm.faces.new([bm.verts[i] for i in f])
+            except ValueError:
+                # Уникаємо дублювання облич
+                pass
+
+        bm.to_mesh(mesh)
+        bm.free()
 
         self.obj = obj

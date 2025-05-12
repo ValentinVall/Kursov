@@ -1,36 +1,59 @@
-# geometry/base_shape.py
-
 import bpy
-from abc import ABC, abstractmethod
 
 
-class PlatonShape(ABC):
-    def __init__(self, name: str, location=(0, 0, 0)):
+class PlatonShape:
+    def __init__(self, name="PlatonShape"):
         self.name = name
-        self.location = location
-        self.obj = None  # Об'єкт Blender, який буде створено
+        self.obj = None  # Змінна для зберігання об'єкта Blender
 
-    @abstractmethod
     def create_mesh(self):
-        """Абстрактний метод для створення геометрії"""
-        pass
+        """Метод для створення 3D-моделі (місце для переозначення в дочірніх класах)."""
+        raise NotImplementedError("Цей метод має бути реалізований у дочірніх класах.")
 
-    def place_object(self):
-        """Додає об'єкт на сцену"""
+    def set_material(self, material):
+        """Призначення матеріалу об'єкту."""
         if self.obj:
-            self.obj.location = self.location
-            self.obj.name = self.name
+            if material:
+                self.obj.data.materials.append(material)
+            else:
+                print(f"Матеріал не знайдений для {self.name}")
         else:
-            raise ValueError("Object has not been created yet!")
+            print(f"{self.name} ще не створено")
 
-    def delete_if_exists(self):
-        """Видаляє об'єкт із тією ж назвою, якщо вже існує в сцені"""
-        old_obj = bpy.data.objects.get(self.name)
-        if old_obj:
-            bpy.data.objects.remove(old_obj, do_unlink=True)
+    def animate(self, axis='Z', frames=100, rotation_angle=360):
+        """Анімація обертання об'єкта по заданій осі."""
+        if not self.obj:
+            print(f"{self.name} ще не створено.")
+            return
 
-    def build(self):
-        """Шаблонний метод, який керує створенням"""
-        self.delete_if_exists()
-        self.create_mesh()
-        self.place_object()
+        if axis not in ['X', 'Y', 'Z']:
+            print(f"Невірна вісь: {axis}. Має бути X, Y, або Z.")
+            return
+
+        # Анімація обертання
+        self.obj.rotation_mode = 'XYZ'
+        self.obj.rotation_euler = (0, 0, 0)
+        self.obj.keyframe_insert(data_path="rotation_euler", frame=0)
+
+        rotation = {
+            'X': (rotation_angle, 0, 0),
+            'Y': (0, rotation_angle, 0),
+            'Z': (0, 0, rotation_angle)
+        }
+
+        self.obj.rotation_euler = rotation[axis]
+        self.obj.keyframe_insert(data_path="rotation_euler", frame=frames)
+
+    def move(self, location=(0, 0, 0)):
+        """Переміщення об'єкта в задану точку."""
+        if self.obj:
+            self.obj.location = location
+        else:
+            print(f"{self.name} ще не створено")
+
+    def scale(self, scale=(1, 1, 1)):
+        """Масштабування об'єкта."""
+        if self.obj:
+            self.obj.scale = scale
+        else:
+            print(f"{self.name} ще не створено")

@@ -1,3 +1,2 @@
 # animation/__init__.py
-
-from .animator import animate_rotation
+# Пакет для додавання анімації до об'єктів у сцені Blender

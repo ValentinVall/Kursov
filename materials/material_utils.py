@@ -1,38 +1,43 @@
 import bpy
-import os
 
-def export_active_object_to_obj(filepath=None):
-    obj = bpy.context.active_object
-    if not obj:
-        print("Немає активного об'єкта для експорту.")
-        return
+def create_material(name="Material", color=(1.0, 0.5, 0.5, 1.0), metallic=0.0, roughness=0.5):
+    """
+    Створює матеріал із заданим кольором, металічністю та шорсткістю.
+    Повертає об'єкт матеріалу.
+    """
+    if name in bpy.data.materials:
+        mat = bpy.data.materials[name]
+    else:
+        mat = bpy.data.materials.new(name=name)
 
-    if not filepath:
-        desktop = os.path.expanduser("~/Desktop")
-        filepath = os.path.join(desktop, f"{obj.name}.obj")
+    mat.use_nodes = True
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
 
-    bpy.ops.export_scene.obj(
-        filepath=filepath,
-        use_selection=True,
-        use_materials=True
-    )
-    print(f"Об'єкт експортовано у .obj: {filepath}")
+    # Очистимо всі вузли, щоб уникнути конфліктів
+    for node in nodes:
+        nodes.remove(node)
+
+    # Додаємо новий Principled BSDF
+    output_node = nodes.new(type='ShaderNodeOutputMaterial')
+    bsdf_node = nodes.new(type='ShaderNodeBsdfPrincipled')
+
+    # Встановлюємо властивості
+    bsdf_node.inputs['Base Color'].default_value = color
+    bsdf_node.inputs['Metallic'].default_value = metallic
+    bsdf_node.inputs['Roughness'].default_value = roughness
+
+    # Зв'язуємо BSDF з виходом
+    links.new(bsdf_node.outputs['BSDF'], output_node.inputs['Surface'])
+
+    return mat
 
 
-def export_active_object_to_gltf(filepath=None):
-    obj = bpy.context.active_object
-    if not obj:
-        print("Немає активного об'єкта для експорту.")
-        return
-
-    if not filepath:
-        desktop = os.path.expanduser("~/Desktop")
-        filepath = os.path.join(desktop, f"{obj.name}.glb")
-
-    bpy.ops.export_scene.gltf(
-        filepath=filepath,
-        export_selected=True,
-        export_format='GLB',
-        export_apply=True
-    )
-    print(f"Об'єкт експортовано у .glb: {filepath}")
+def assign_material(obj, material):
+    """
+    Призначає матеріал об'єкту.
+    """
+    if obj.data.materials:
+        obj.data.materials[0] = material
+    else:
+        obj.data.materials.append(material)

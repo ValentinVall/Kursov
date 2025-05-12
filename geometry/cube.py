@@ -1,38 +1,48 @@
-# geometry/cube.py
-
 import bpy
 import bmesh
-from .base_shape import PlatonShape
+from geometry.base_shape import PlatonShape
+
 
 class Cube(PlatonShape):
-    def __init__(self, name="Cube", location=(0, 0, 0)):
-        super().__init__(name, location)
-        self.build()
+    def __init__(self, name="Cube"):
+        super().__init__(name)
+        self.create_mesh()
 
     def create_mesh(self):
-        # Вершини куба
-        vertices = [
-            (1, 1, 1), (1, -1, 1), (-1, -1, 1), (-1, 1, 1),
-            (1, 1, -1), (1, -1, -1), (-1, -1, -1), (-1, 1, -1)
+        verts = [
+            (-1, -1, -1),
+            (-1, -1,  1),
+            (-1,  1, -1),
+            (-1,  1,  1),
+            (1, -1, -1),
+            (1, -1,  1),
+            (1,  1, -1),
+            (1,  1,  1),
         ]
 
-        # Грані (квадрати з 4 вершин)
         faces = [
-            (0, 1, 2, 3),  # верх
-            (0, 1, 5, 4),  # перед
-            (1, 2, 6, 5),  # низ
-            (2, 3, 7, 6),  # зад
-            (3, 0, 4, 7),  # ліво
-            (4, 5, 6, 7)   # право
+            (0, 1, 3, 2),
+            (4, 6, 7, 5),
+            (0, 4, 5, 1),
+            (2, 3, 7, 6),
+            (0, 2, 6, 4),
+            (1, 5, 7, 3),
         ]
 
-        # Створення мешу
         mesh = bpy.data.meshes.new(f"{self.name}_Mesh")
-        mesh.from_pydata(vertices, [], faces)
-        mesh.update()
-
-        # Додаємо об'єкт на сцену
         obj = bpy.data.objects.new(self.name, mesh)
         bpy.context.collection.objects.link(obj)
+
+        bm = bmesh.new()
+
+        for v in verts:
+            bm.verts.new(v)
+        bm.verts.ensure_lookup_table()
+
+        for f in faces:
+            bm.faces.new([bm.verts[i] for i in f])
+
+        bm.to_mesh(mesh)
+        bm.free()
 
         self.obj = obj

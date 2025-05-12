@@ -1,37 +1,48 @@
-# geometry/octahedron.py
-
 import bpy
-from .base_shape import PlatonShape
+import bmesh
+from geometry.base_shape import PlatonShape
+
 
 class Octahedron(PlatonShape):
-    def __init__(self, name="Octahedron", location=(0, 0, 0)):
-        super().__init__(name, location)
-        self.build()
+    def __init__(self, name="Octahedron"):
+        super().__init__(name)
+        self.create_mesh()
 
     def create_mesh(self):
-        # Вершини октаедра
-        vertices = [
-            (0, 0, -1),    # 0 — нижній кінець
-            (-1, 0, 0),    # 1
-            (0, -1, 0),    # 2
-            (1, 0, 0),     # 3
-            (0, 1, 0),     # 4
-            (0, 0, 1)      # 5 — верхній кінець
+        verts = [
+            (1, 0, 0),
+            (-1, 0, 0),
+            (0, 1, 0),
+            (0, -1, 0),
+            (0, 0, 1),
+            (0, 0, -1)
         ]
 
-        # Грані — 8 трикутників
         faces = [
-            (0, 1, 2), (0, 2, 3), (0, 3, 4), (0, 4, 1),
-            (5, 1, 2), (5, 2, 3), (5, 3, 4), (5, 4, 1)
+            (0, 2, 4),
+            (2, 1, 4),
+            (1, 3, 4),
+            (3, 0, 4),
+            (0, 5, 2),
+            (2, 5, 1),
+            (1, 5, 3),
+            (3, 5, 0)
         ]
 
-        # Створення мешу
         mesh = bpy.data.meshes.new(f"{self.name}_Mesh")
-        mesh.from_pydata(vertices, [], faces)
-        mesh.update()
-
-        # Додавання до сцени
         obj = bpy.data.objects.new(self.name, mesh)
         bpy.context.collection.objects.link(obj)
+
+        bm = bmesh.new()
+
+        for v in verts:
+            bm.verts.new(v)
+        bm.verts.ensure_lookup_table()
+
+        for f in faces:
+            bm.faces.new([bm.verts[i] for i in f])
+
+        bm.to_mesh(mesh)
+        bm.free()
 
         self.obj = obj

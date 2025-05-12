@@ -1,1 +1,1 @@
-# Ініціалізація модуля ui
+from .panel import PlatonPanel
